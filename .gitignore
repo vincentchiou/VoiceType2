@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+src-tauri/target/
+src-tauri/target/
+*.log
+
+# Tauri bundles (rebuilt via `npx tauri build`)
+src-tauri/target/release/bundle/
+
+# Runtime config (contains Groq API Key - NEVER commit)
+voicetype-config.json
+gptservice-config.json
+gptservice-history.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+*.tmp

@@ -11,7 +11,7 @@
 
 | 方式 | 檔案 | 說明 |
 |------|------|------|
-| **A. 安裝版（推薦）** | `VoiceType_1.0.1_x64-setup.exe` | 雙擊安裝；若缺 WebView2 會自動下載安裝，全新 Win10／Win11 都可用 |
+| **A. 安裝版（推薦）** | `VoiceType_1.0.2_x64-setup.exe` | 雙擊安裝；若缺 WebView2 會自動下載安裝，全新 Win10／Win11 都可用 |
 | B. 免安裝版 | `voice-type.exe` | 直接執行；需該電腦已有 WebView2（Win10 1803＋／Win11 內建通常有） |
 
 兩種方式**都需要**：麥克風＋網路＋Groq API Key（免費申請：https://console.groq.com）。
@@ -86,7 +86,7 @@ C:\temp\VoiceType2\            ← 建置用（全英文路徑，避開中文路
 └── dist\                      ← npm run build 產物（tauri build 會內嵌）
 
 H:\我的雲端硬碟\Agent\project\VoiceType2\   ← 交付目錄
-├── VoiceType_1.0.1_x64-setup.exe  ← 安裝版（缺 WebView2 自動下載）
+├── VoiceType_1.0.2_x64-setup.exe  ← 安裝版（缺 WebView2 自動下載）
 ├── voice-type.exe             ← 免安裝版（約 11MB，前端已內嵌）
 ├── voicetype-config.json      ← 設定（含 API Key，勿外流）
 └── README.md                  ← 本檔
@@ -122,7 +122,7 @@ npx tauri build        # ← 一定要用這個，不要只用 cargo build
 | 2026-09-12 | v3：改 `global-hotkey` crate → 無反應；改 `WH_KEYBOARD_LL` hook＋Tauri 事件 relay → 仍無反應 |
 | 2026-09-12 | v4：hook→channel→管線線程**全後端直連**，F9 可用；加入**上下文記憶校正（前 5 句）**；v1.0.0 發布 |
 | 2026-09-12 | v1.0.1：校正提示詞改為**科技／AI 術語優先＋一律繁體中文** |
-| 2026-09-12 | 未發布：新增**開機自動啟動**設定（登錄檔 Run 機碼）；貼上文字**每句結尾加空格** |
+| 2026-09-12 | v1.0.2（現行）：新增**開機自動啟動**設定（登錄檔 Run 機碼）；貼上文字**每句結尾加空格** |
 
 ---
 
@@ -146,6 +146,6 @@ npx tauri build        # ← 一定要用這個，不要只用 cargo build
 
 ---
 
-**最後更新**：2026-09-12（v1.0.1）
+**最後更新**：2026-09-12（v1.0.2）
 **狀態**：✅ 可用（F9 全域錄音→轉錄→上下文校正→自動貼上）
-**GitHub**：https://github.com/vincentchiou/VoiceType2（v1.0.1 Release）
+**GitHub**：https://github.com/vincentchiou/VoiceType2（v1.0.2 Release）

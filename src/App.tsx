@@ -5,14 +5,16 @@ import { listen } from '@tauri-apps/api/event'
 interface AppConfig {
   groq_api_key: string
   auto_correct: boolean
+  auto_start: boolean
 }
 
 function App() {
-  const [config, setConfig] = useState<AppConfig>({ groq_api_key: '', auto_correct: true })
+  const [config, setConfig] = useState<AppConfig>({ groq_api_key: '', auto_correct: true, auto_start: false })
   const [isRecording, setIsRecording] = useState(false)
   const [status, setStatus] = useState('載入中...')
   const [showSettings, setShowSettings] = useState(false)
   const [apiKeyInput, setApiKeyInput] = useState('')
+  const [autoStartInput, setAutoStartInput] = useState(false)
   const isRecordingRef = useRef(false)
   const processingRef = useRef(false)
 
@@ -50,6 +52,9 @@ function App() {
     invoke<AppConfig>('get_config_command').then((cfg) => {
       setConfig(cfg)
       setApiKeyInput(cfg.groq_api_key)
+      setAutoStartInput(cfg.auto_start)
+      // 以登錄檔實際狀態為準
+      invoke<boolean>('get_autostart').then(setAutoStartInput).catch(() => {})
       if (!cfg.groq_api_key) {
         setShowSettings(true)
         setStatus('請先設定 API Key')
@@ -104,11 +109,15 @@ function App() {
   }
 
   const saveSettings = async () => {
-    const newConfig = { groq_api_key: apiKeyInput, auto_correct: config.auto_correct }
-    await invoke('set_config', { config: newConfig })
-    setConfig(newConfig)
-    setShowSettings(false)
-    setStatus('就緒 - 按 F9 開始錄音')
+    try {
+      const newConfig = { groq_api_key: apiKeyInput, auto_correct: config.auto_correct, auto_start: autoStartInput }
+      await invoke('set_config', { config: newConfig })
+      setConfig(newConfig)
+      setShowSettings(false)
+      setStatus('就緒 - 按 F9 開始錄音')
+    } catch (err) {
+      setStatus(`儲存失敗: ${err}`)
+    }
   }
 
   if (showSettings) {
@@ -122,6 +131,12 @@ function App() {
             placeholder="gsk_..." />
           <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>免費申請: https://console.groq.com</p>
         </div>
+        <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <input type="checkbox" checked={autoStartInput} onChange={(e) => setAutoStartInput(e.target.checked)}
+            style={{ width: '18px', height: '18px' }} />
+          <label style={{ fontWeight: 'bold' }}>開機自動啟動</label>
+        </div>
+        <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>Windows 重開機後自動執行 VoiceType</p>
         <button onClick={saveSettings}
           style={{ width: '100%', marginTop: '20px', padding: '12px', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', cursor: 'pointer' }}>
           儲存
@@ -145,7 +160,7 @@ function App() {
       </button>
       <p style={{ marginTop: '20px', color: isRecording ? '#ef4444' : '#333', fontWeight: 'bold' }}>{status}</p>
       <div style={{ marginTop: '15px', fontSize: '12px', color: '#999' }}>快捷鍵: F9 (按住錄音，鬆開停止)</div>
-      <button onClick={() => { setApiKeyInput(config.groq_api_key); setShowSettings(true) }}
+      <button onClick={() => { setApiKeyInput(config.groq_api_key); setAutoStartInput(config.auto_start); setShowSettings(true) }}
         style={{ marginTop: '15px', background: 'none', border: 'none', color: '#7c3aed', cursor: 'pointer', textDecoration: 'underline' }}>
         設定
       </button>

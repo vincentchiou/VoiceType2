@@ -1058,7 +1058,7 @@ dependencies = [
  "rustc_version",
  "toml 1.1.6+spec-1.1.0",
  "vswhom",
- "winreg",
+ "winreg 0.55.0",
 ]
 
 [[package]]
@@ -4933,7 +4933,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "voice-type"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "arboard",
  "chrono",
@@ -4948,6 +4948,7 @@ dependencies = [
  "tauri-plugin-opener",
  "tokio",
  "winapi",
+ "winreg 0.5.1",
 ]
 
 [[package]]
@@ -5676,6 +5677,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23b97319f7b8343df12cc98938e5c3eb436064524c8d2b4e30a1d3a36eecdf81"
 dependencies = [
  "memchr",
+]
+
+[[package]]
+name = "winreg"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a27a759395c1195c4cc5cda607ef6f8f6498f64e78f7900f5de0a127a424704a"
+dependencies = [
+ "winapi",
 ]
 
 [[package]]

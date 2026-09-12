@@ -1,6 +1,7 @@
 // VoiceType - Main Library
 mod audio;
 mod api;
+mod autostart;
 mod hotkey;
 
 use serde::{Deserialize, Serialize};
@@ -50,11 +51,12 @@ fn correct_with_history(client: &api::GroqClient, text: &str, use_context: bool)
 pub struct AppConfig {
     pub groq_api_key: String,
     pub auto_correct: bool,
+    pub auto_start: bool,
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
-        Self { groq_api_key: String::new(), auto_correct: true }
+        Self { groq_api_key: String::new(), auto_correct: true, auto_start: false }
     }
 }
 
@@ -111,9 +113,11 @@ async fn transcribe(audio_path: String) -> Result<String, String> {
         text
     };
 
+    // 每句結尾加一個空格，連續貼上時句子之間有分隔
+    let paste_text = format!("{} ", final_text.trim_end());
     {
         let mut cb = arboard::Clipboard::new().map_err(|e| e.to_string())?;
-        cb.set_text(&final_text).map_err(|e| e.to_string())?;
+        cb.set_text(&paste_text).map_err(|e| e.to_string())?;
     }
     std::thread::sleep(std::time::Duration::from_millis(300));
     hotkey::simulate_paste()?;
@@ -124,11 +128,30 @@ async fn transcribe(audio_path: String) -> Result<String, String> {
 fn get_config_command() -> Result<AppConfig, String> { get_config() }
 
 #[tauri::command]
-fn set_config(config: AppConfig) -> Result<(), String> { save_config(&config) }
+fn set_config(config: AppConfig) -> Result<(), String> {
+    // Apply auto-start setting to Windows Registry
+    if let Err(e) = autostart::set_autostart(config.auto_start) {
+        eprintln!("[Config] autostart apply failed: {}", e);
+        return Err(e);
+    }
+    save_config(&config)
+}
+
+#[tauri::command]
+fn get_autostart() -> bool { autostart::get_autostart() }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     eprintln!("[VoiceType] Starting...");
+
+    // Ensure registry auto-start matches saved config (e.g. exe moved after update)
+    if let Ok(cfg) = get_config() {
+        if cfg.auto_start {
+            if let Err(e) = autostart::set_autostart(true) {
+                eprintln!("[VoiceType] autostart ensure failed: {}", e);
+            }
+        }
+    }
 
     let audio_manager = AudioManager::new().expect("Cannot create AudioManager");
     let audio_arc = Arc::new(Mutex::new(audio_manager));
@@ -203,9 +226,10 @@ pub fn run() {
                                 text
                             };
 
-                            // Copy to clipboard
+                            // Copy to clipboard (每句結尾加一個空格，連續貼上時有分隔)
+                            let paste_text = format!("{} ", final_text.trim_end());
                             if let Ok(mut cb) = arboard::Clipboard::new() {
-                                let _ = cb.set_text(&final_text);
+                                let _ = cb.set_text(&paste_text);
                             }
 
                             // Paste
@@ -236,6 +260,7 @@ pub fn run() {
             transcribe,
             get_config_command,
             set_config,
+            get_autostart,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

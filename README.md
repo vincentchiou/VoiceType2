@@ -11,7 +11,7 @@
 
 | 方式 | 檔案 | 說明 |
 |------|------|------|
-| **A. 安裝版（推薦）** | `VoiceType_1.0.2_x64-setup.exe` | 雙擊安裝；若缺 WebView2 會自動下載安裝，全新 Win10／Win11 都可用 |
+| **A. 安裝版（推薦）** | `VoiceType_1.0.3_x64-setup.exe` | 雙擊安裝；若缺 WebView2 會自動下載安裝，全新 Win10／Win11 都可用 |
 | B. 免安裝版 | `voice-type.exe` | 直接執行；需該電腦已有 WebView2（Win10 1803＋／Win11 內建通常有） |
 
 兩種方式**都需要**：麥克風＋網路＋Groq API Key（免費申請：https://console.groq.com）。
@@ -48,6 +48,7 @@
 - 🎤 **全域語音輸入**：F9 按住錄音、鬆開停止，系統層級 keyboard hook（`SetWindowsHookExW`），焦點在任何程式都能觸發
 - 🗣️ **語音轉文字**：Groq Whisper API（`whisper-large-v3-turbo`），免費、免下載模型、中文辨識佳
 - 🧠 **AI 文字校正**：Groq LLM（`llama-3.1-8b-instant`）自動修正錯別字／同音字、加標點、移除贅字（那個、就是、然後、嗯、啊）；**一律輸出繁體中文**；科技／AI 術語優先（API、LLM、GitHub、Whisper、prompt、token 等保留英文原文不翻譯）
+- 🔤 **強制簡轉繁**：AI 校正完成後使用 OpenCC（開放中文轉換）再做一次固定轉換，確保語音輸出不會回傳簡體中文
 - 🔗 **上下文記憶校正**：自動記住最近 **5 句**已校正內容，一起送給 LLM 參考 → 同音字判斷更準（再／在、的／得、他／她）、語意連貫（關程式即清空，換主題重開即可）
 - 📋 **自動貼上**：校正後自動寫入剪貼簿並模擬 `Ctrl+V` 貼到游標位置；每句結尾自動加一個空格，連續說多句不會黏在一起
 - 🔄 **開機自動啟動**：設定頁可勾選，透過登錄檔 `HKCU\...\Run\VoiceType2` 實現，Windows 重開機後自動執行
@@ -86,7 +87,7 @@ C:\temp\VoiceType2\            ← 建置用（全英文路徑，避開中文路
 └── dist\                      ← npm run build 產物（tauri build 會內嵌）
 
 H:\我的雲端硬碟\Agent\project\VoiceType2\   ← 交付目錄
-├── VoiceType_1.0.2_x64-setup.exe  ← 安裝版（缺 WebView2 自動下載）
+├── VoiceType_1.0.3_x64-setup.exe  ← 安裝版（缺 WebView2 自動下載）
 ├── voice-type.exe             ← 免安裝版（約 11MB，前端已內嵌）
 ├── voicetype-config.json      ← 設定（含 API Key，勿外流）
 └── README.md                  ← 本檔
@@ -146,6 +147,6 @@ npx tauri build        # ← 一定要用這個，不要只用 cargo build
 
 ---
 
-**最後更新**：2026-09-12（v1.0.2）
-**狀態**：✅ 可用（F9 全域錄音→轉錄→上下文校正→自動貼上）
-**GitHub**：https://github.com/vincentchiou/VoiceType2（v1.0.2 Release）
+**最後更新**：2026-09-21（v1.0.3）
+**狀態**：✅ 可用（F9 全域錄音→轉錄→上下文校正→強制簡轉繁→自動貼上）
+**GitHub**：https://github.com/vincentchiou/VoiceType2（v1.0.3 Release）

@@ -1,6 +1,7 @@
 // VoiceType - Simple API module
 use reqwest::blocking::multipart;
 use serde::Deserialize;
+use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 
 pub struct GroqClient {
     api_key: String,
@@ -79,6 +80,13 @@ impl GroqClient {
         self.correct_with_context(text, &[])
     }
 
+    // OpenCC provides a deterministic final safeguard after model correction.
+    fn to_traditional(text: &str) -> String {
+        OpenCC::from_config(BuiltinConfig::S2t)
+            .map(|converter| converter.convert(text))
+            .unwrap_or_else(|_| text.to_string())
+    }
+
     /// Correct text using conversation context (previous sentences).
     /// `context` = list of previous corrected sentences, oldest first.
     pub fn correct_with_context(&self, text: &str, context: &[String]) -> Result<String, String> {
@@ -93,13 +101,13 @@ impl GroqClient {
         let prompt = format!(
             "你是一個專業的繁體中文語音轉文字校正助手，熟悉科技與 AI 領域術語。\n\
              {}請校正以下這句語音轉文字的內容：\n\
-             1. 一律輸出繁體中文（原文若有簡體字請轉為繁體）\n\
+             1. 一律輸出繁體中文（原文若有任何簡體字，必須全部轉為繁體）\n\
              2. 科技與 AI 專有名詞、縮寫、英文術語保留原文不翻譯（如：API、LLM、AI、GitHub、Whisper、prompt、token、Tauri、ChatGPT、Groq、Ollama、agent、model），並修正其拼寫\n\
              3. 科技詞彙優先採用業界常用寫法；修正錯別字與同音字（可參考前文判斷正確用字，例如「再/在」「的/得/地」「他/她/它」）\n\
              4. 加上適當的標點符號\n\
              5. 移除贅字和語氣詞（如：那個、就是、然後、嗯、啊、呃）\n\
              6. 保持原意，不要改變內容，不要續寫，不要加評論\n\
-             7. 只輸出校正後的本句文字\n\n\
+             7. 只輸出校正後的本句文字，不得輸出簡體中文\n\n\
              本句原文：{}",
             context_block, text
         );
@@ -124,12 +132,15 @@ impl GroqClient {
 
         if !status.is_success() {
             eprintln!("[API] LLM error: {}", body);
-            return Ok(text.to_string());
+            return Ok(Self::to_traditional(text));
         }
 
         let r: ChatResponse = serde_json::from_str(&body)
             .map_err(|e| format!("LLM JSON error: {}", e))?;
 
-        Ok(r.choices.first().map(|c| c.message.content.trim().to_string()).unwrap_or_else(|| text.to_string()))
+        let corrected = r.choices.first()
+            .map(|c| c.message.content.trim())
+            .unwrap_or(text);
+        Ok(Self::to_traditional(corrected))
     }
 }

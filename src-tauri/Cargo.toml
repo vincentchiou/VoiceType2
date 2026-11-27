@@ -1,6 +1,6 @@
 [package]
 name = "voice-type"
-version = "1.0.2"
+version = "1.0.4"
 description = "AI Voice Input Tool"
 authors = ["you"]
 edition = "2021"

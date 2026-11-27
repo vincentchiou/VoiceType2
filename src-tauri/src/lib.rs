@@ -27,10 +27,11 @@ fn get_context() -> Vec<String> {
 
 fn push_history(text: &str) {
     if text.trim().is_empty() { return; }
+    let limit = get_config().map(|c| c.context_sentences).unwrap_or(5).clamp(1, 15);
     if let Ok(mut h) = history().lock() {
         h.push(text.trim().to_string());
-        while h.len() > 5 { h.remove(0); }
-        eprintln!("[History] kept {} sentences", h.len());
+        while h.len() > limit { h.remove(0); }
+        eprintln!("[History] kept {} sentences (limit: {})", h.len(), limit);
     }
 }
 
@@ -52,11 +53,19 @@ pub struct AppConfig {
     pub groq_api_key: String,
     pub auto_correct: bool,
     pub auto_start: bool,
+    pub hotkey: String,
+    pub context_sentences: usize,
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
-        Self { groq_api_key: String::new(), auto_correct: true, auto_start: false }
+        Self {
+            groq_api_key: String::new(),
+            auto_correct: true,
+            auto_start: false,
+            hotkey: "F9".to_string(),
+            context_sentences: 5,
+        }
     }
 }
 
@@ -134,7 +143,22 @@ fn set_config(config: AppConfig) -> Result<(), String> {
         eprintln!("[Config] autostart apply failed: {}", e);
         return Err(e);
     }
+    // Update active hotkey VK
+    hotkey::set_hotkey_vk(hotkey::key_name_to_vk(&config.hotkey));
     save_config(&config)
+}
+
+#[tauri::command]
+fn get_history_command() -> Vec<String> {
+    get_context()
+}
+
+#[tauri::command]
+fn clear_history_command() {
+    if let Ok(mut h) = history().lock() {
+        h.clear();
+        eprintln!("[History] Cleared");
+    }
 }
 
 #[tauri::command]
@@ -143,6 +167,11 @@ fn get_autostart() -> bool { autostart::get_autostart() }
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     eprintln!("[VoiceType] Starting...");
+
+    // Apply configured hotkey
+    if let Ok(cfg) = get_config() {
+        hotkey::set_hotkey_vk(hotkey::key_name_to_vk(&cfg.hotkey));
+    }
 
     // Ensure registry auto-start matches saved config (e.g. exe moved after update)
     if let Ok(cfg) = get_config() {
@@ -261,6 +290,8 @@ pub fn run() {
             get_config_command,
             set_config,
             get_autostart,
+            get_history_command,
+            clear_history_command,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

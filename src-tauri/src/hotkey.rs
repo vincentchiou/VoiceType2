@@ -1,9 +1,35 @@
 // VoiceType - Keyboard hook using crossbeam channel
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::OnceLock;
 
 static PRESSING: AtomicBool = AtomicBool::new(false);
 static SENDER: OnceLock<crossbeam_channel::Sender<bool>> = OnceLock::new();
+static CURRENT_VK: AtomicU32 = AtomicU32::new(0x78); // 預設 F9 (0x78)
+
+pub fn set_hotkey_vk(vk: u32) {
+    CURRENT_VK.store(vk, Ordering::SeqCst);
+    eprintln!("[Hook] Target VK updated to: 0x{:X}", vk);
+}
+
+pub fn key_name_to_vk(name: &str) -> u32 {
+    match name.trim().to_uppercase().as_str() {
+        "F1" => 0x70,
+        "F2" => 0x71,
+        "F3" => 0x72,
+        "F4" => 0x73,
+        "F5" => 0x74,
+        "F6" => 0x75,
+        "F7" => 0x76,
+        "F8" => 0x77,
+        "F9" => 0x78,
+        "F10" => 0x79,
+        "F11" => 0x7A,
+        "F12" => 0x7B,
+        "SCROLLLOCK" => 0x91,
+        "PAUSE" => 0x13,
+        _ => 0x78, // 預設 F9
+    }
+}
 
 pub fn start_hook() -> crossbeam_channel::Receiver<bool> {
     let (tx, rx) = crossbeam_channel::unbounded();
@@ -19,14 +45,15 @@ pub fn start_hook() -> crossbeam_channel::Receiver<bool> {
                     let is_down = wparam == WM_KEYDOWN as usize || wparam == WM_SYSKEYDOWN as usize;
                     let is_up = wparam == WM_KEYUP as usize || wparam == WM_SYSKEYUP as usize;
 
-                    if vk == 0x78 { // F9
+                    let target_vk = CURRENT_VK.load(Ordering::SeqCst);
+                    if vk == target_vk {
                         if is_down && !PRESSING.load(Ordering::SeqCst) {
                             PRESSING.store(true, Ordering::SeqCst);
-                            eprintln!("[Hook] F9 DOWN");
+                            eprintln!("[Hook] Key DOWN (0x{:X})", vk);
                             if let Some(tx) = SENDER.get() { let _ = tx.send(true); }
                         } else if is_up && PRESSING.load(Ordering::SeqCst) {
                             PRESSING.store(false, Ordering::SeqCst);
-                            eprintln!("[Hook] F9 UP");
+                            eprintln!("[Hook] Key UP (0x{:X})", vk);
                             if let Some(tx) = SENDER.get() { let _ = tx.send(false); }
                         }
                     }
